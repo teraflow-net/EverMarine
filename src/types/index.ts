@@ -282,3 +282,57 @@ export interface QuoteSendLog {
   sent_date: string
   error_message: string
 }
+
+// ═══════════════════════════════════════════
+// 품목별 매입처 견적 추적 (ItemSupplierQuote)
+// ═══════════════════════════════════════════
+
+export interface ItemSupplierQuote {
+  supplierId: number
+  supplierCode: string
+  supplierName: string
+  status: 'pending' | 'requested' | 'replied' | 'selected'
+  purchasePriceKrw: number | null
+  purchasePriceForeign: number | null
+  deliveryDays: number | null
+  repliedAt: string | null
+  remarks: string
+}
+
+// ═══════════════════════════════════════════
+// 발주서 (PurchaseOrder)
+// ═══════════════════════════════════════════
+
+export interface PurchaseOrder {
+  id: number
+  poNo: string          // PO-2026-xxxx
+  quoteId: number       // FK → Quote
+  docNumber: string     // 연결 견적 문서번호
+  customerName: string
+  supplierId: number
+  supplierCode: string
+  supplierName: string
+  items: POItem[]
+  totalAmountKrw: number
+  totalAmountForeign: number
+  currency: Currency
+  issuedAt: string
+  confirmedAt: string | null
+  shippingStatus: ShippingStatus
+  expectedDelivery: string | null
+  actualDelivery: string | null
+  trackingNo: string
+  remark: string
+}
+
+export interface POItem {
+  quoteItemId: number
+  partNo: string
+  productName: string
+  quantity: number
+  unit: string
+  purchasePriceKrw: number
+  purchasePriceForeign: number
+}
+
+export type ShippingStatus = 'po_sent' | 'po_confirmed' | 'in_production' | 'shipped' | 'in_transit' | 'arrived' | 'delivered'

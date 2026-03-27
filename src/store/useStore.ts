@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { Quote, Email, SentEmail, Customer, Supplier, Vessel, PriceSearch, SupplierItemPrice } from '@/types'
+import type { Quote, QuoteItem, Email, SentEmail, Customer, Supplier, Vessel, PriceSearch, SupplierItemPrice, PurchaseOrder, ShippingStatus } from '@/types'
 import {
   quotes as mockQuotes,
   emails as mockEmails,
@@ -9,6 +9,7 @@ import {
   vessels as mockVessels,
   priceSearches as mockPriceSearches,
   supplierItemPrices as mockSupplierItemPrices,
+  purchaseOrders as mockPurchaseOrders,
 } from '@/data/mock'
 
 interface TradeStore {
@@ -20,11 +21,17 @@ interface TradeStore {
   vessels: Vessel[]
   priceSearches: PriceSearch[]
   supplierItemPrices: SupplierItemPrice[]
+  purchaseOrders: PurchaseOrder[]
 
   // Quote
   addQuote: (quote: Quote) => void
   updateQuote: (id: number, updates: Partial<Quote>) => void
   toggleQuoteFlag: (id: number, flag: 'is_quote' | 'is_order' | 'is_specification' | 'is_tax' | 'is_payment') => void
+  updateQuoteItem: (quoteId: number, itemId: number, updates: Partial<QuoteItem>) => void
+
+  // PurchaseOrder
+  addPO: (po: PurchaseOrder) => void
+  updatePOShippingStatus: (id: number, status: ShippingStatus) => void
 
   // PriceSearch
   addPriceSearch: (item: PriceSearch) => void
@@ -46,6 +53,7 @@ export const useStore = create<TradeStore>((set) => ({
   vessels: mockVessels,
   priceSearches: mockPriceSearches,
   supplierItemPrices: mockSupplierItemPrices,
+  purchaseOrders: mockPurchaseOrders,
 
   addQuote: (quote) =>
     set((s) => ({ quotes: [quote, ...s.quotes] })),
@@ -61,6 +69,31 @@ export const useStore = create<TradeStore>((set) => ({
     set((s) => ({
       quotes: s.quotes.map((q) =>
         q.id === id ? { ...q, [flag]: !q[flag] } : q
+      ),
+    })),
+
+  updateQuoteItem: (quoteId, itemId, updates) =>
+    set((s) => ({
+      quotes: s.quotes.map((q) =>
+        q.id === quoteId
+          ? {
+              ...q,
+              items: (q.items ?? []).map((item) =>
+                item.id === itemId ? { ...item, ...updates } : item
+              ),
+            }
+          : q
+      ),
+    })),
+
+  // PurchaseOrder
+  addPO: (po) =>
+    set((s) => ({ purchaseOrders: [...s.purchaseOrders, po] })),
+
+  updatePOShippingStatus: (id, status) =>
+    set((s) => ({
+      purchaseOrders: s.purchaseOrders.map((po) =>
+        po.id === id ? { ...po, shippingStatus: status } : po
       ),
     })),
 

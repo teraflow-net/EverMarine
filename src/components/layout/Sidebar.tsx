@@ -12,7 +12,7 @@ const navSections = [
     items: [
       { to: '/',       icon: LayoutDashboard, label: '대시보드' },
       { to: '/rfq',    icon: FileText,        label: '견적 관리',    badge: '2' },
-      { to: '/po',     icon: ShoppingCart,     label: '수주 관리' },
+      { to: '/po',     icon: ShoppingCart,     label: '발주 관리' },
       { to: '/email',  icon: Mail,            label: '이메일 센터' },
     ],
   },
