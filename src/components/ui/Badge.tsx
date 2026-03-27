@@ -1,11 +1,11 @@
 import { cn } from '@/lib/utils'
-import type { RFQStatus, POStatus } from '@/types'
+import type { Quote } from '@/types'
 
 /* ───────────────────────────────────────────
  *  범용 Badge
  * ─────────────────────────────────────────── */
 
-type BadgeVariant = 'default' | 'info' | 'warning' | 'success' | 'danger' | 'purple' | 'orange' | 'muted'
+type BadgeVariant = 'default' | 'info' | 'warning' | 'success' | 'danger' | 'purple' | 'orange' | 'muted' | 'indigo' | 'emerald'
 
 const badgeVariantStyles: Record<BadgeVariant, string> = {
   default: 'bg-slate-200 text-slate-700',
@@ -16,6 +16,8 @@ const badgeVariantStyles: Record<BadgeVariant, string> = {
   purple:  'bg-violet-100 text-violet-800',
   orange:  'bg-orange-100 text-orange-800',
   muted:   'bg-gray-200 text-gray-600',
+  indigo:  'bg-indigo-100 text-indigo-800',
+  emerald: 'bg-emerald-100 text-emerald-800',
 }
 
 interface BadgeProps {
@@ -39,40 +41,44 @@ export function Badge({ variant = 'default', children, className }: BadgeProps) 
 }
 
 /* ───────────────────────────────────────────
- *  RFQ 상태 배지
+ *  견적 상태 배지들
  * ─────────────────────────────────────────── */
 
-const rfqStatusConfig: Record<RFQStatus, { label: string; variant: BadgeVariant }> = {
-  received:         { label: '수신됨',       variant: 'default' },
-  parsing:          { label: '파싱중',       variant: 'warning' },
-  quoted_supplier:  { label: '업체견적요청', variant: 'info' },
-  supplier_replied: { label: '업체회신완료', variant: 'purple' },
-  quoted_customer:  { label: '견적제출완료', variant: 'purple' },
-  po_received:      { label: '발주수신',     variant: 'orange' },
-  ordered:          { label: '발주완료',     variant: 'success' },
-  delivered:        { label: '납품완료',     variant: 'success' },
-  closed:           { label: '종료',         variant: 'muted' },
+interface QuoteStatusBadgesProps {
+  quote: Quote
+  className?: string
 }
 
-export function RFQStatusBadge({ status }: { status: RFQStatus }) {
-  const { label, variant } = rfqStatusConfig[status]
-  return <Badge variant={variant}>{label}</Badge>
+const statusFlags = [
+  { key: 'is_quote' as const, label: '견적', variant: 'info' as BadgeVariant },
+  { key: 'is_order' as const, label: '수주', variant: 'indigo' as BadgeVariant },
+  { key: 'is_specification' as const, label: '명세', variant: 'purple' as BadgeVariant },
+  { key: 'is_tax' as const, label: '세금', variant: 'orange' as BadgeVariant },
+  { key: 'is_payment' as const, label: '입금', variant: 'emerald' as BadgeVariant },
+] as const
+
+export function QuoteStatusBadges({ quote, className }: QuoteStatusBadgesProps) {
+  const activeBadges = statusFlags.filter((f) => quote[f.key])
+
+  if (activeBadges.length === 0) {
+    return <Badge variant="muted" className={className}>미처리</Badge>
+  }
+
+  return (
+    <div className={cn('flex items-center gap-1 flex-wrap', className)}>
+      {activeBadges.map((f) => (
+        <Badge key={f.key} variant={f.variant}>{f.label}</Badge>
+      ))}
+    </div>
+  )
 }
 
-/* ───────────────────────────────────────────
- *  PO 상태 배지
- * ─────────────────────────────────────────── */
-
-const poStatusConfig: Record<POStatus, { label: string; variant: BadgeVariant }> = {
-  pending:   { label: '대기중',   variant: 'default' },
-  sent:      { label: '발송완료', variant: 'info' },
-  confirmed: { label: '확인완료', variant: 'purple' },
-  shipped:   { label: '선적완료', variant: 'orange' },
-  delivered: { label: '납품완료', variant: 'success' },
-  closed:    { label: '종료',     variant: 'muted' },
-}
-
-export function POStatusBadge({ status }: { status: POStatus }) {
-  const { label, variant } = poStatusConfig[status]
-  return <Badge variant={variant}>{label}</Badge>
+/** 단일 가장 높은 상태만 표시 */
+export function QuoteStatusBadge({ quote, className }: QuoteStatusBadgesProps) {
+  for (let i = statusFlags.length - 1; i >= 0; i--) {
+    if (quote[statusFlags[i].key]) {
+      return <Badge variant={statusFlags[i].variant} className={className}>{statusFlags[i].label}</Badge>
+    }
+  }
+  return <Badge variant="muted" className={className}>미처리</Badge>
 }

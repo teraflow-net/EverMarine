@@ -1,70 +1,45 @@
 import { useParams, useNavigate } from 'react-router-dom'
 import { Header } from '@/components/layout/Header'
-import { POStatusBadge } from '@/components/ui/Badge'
+import { QuoteStatusBadges, Badge } from '@/components/ui/Badge'
 import { useStore } from '@/store/useStore'
-import { suppliers } from '@/data/mock'
-import { formatDate, formatCurrency } from '@/lib/utils'
+import { formatDate, formatKRW, formatForeign } from '@/lib/utils'
 import { Button } from '@/components/ui/Button'
-import { ArrowLeft, Send, Package } from 'lucide-react'
+import { ArrowLeft } from 'lucide-react'
+
+const flagConfig = [
+  { key: 'is_quote' as const, label: '견적' },
+  { key: 'is_order' as const, label: '수주' },
+  { key: 'is_specification' as const, label: '명세' },
+  { key: 'is_tax' as const, label: '세금' },
+  { key: 'is_payment' as const, label: '입금' },
+]
 
 export function PODetail() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const purchaseOrders = useStore((s) => s.purchaseOrders)
-  const rfqs = useStore((s) => s.rfqs)
-  const emailLogs = useStore((s) => s.emailLogs)
-  const updatePOStatus = useStore((s) => s.updatePOStatus)
+  const quotes = useStore((s) => s.quotes)
+  const toggleQuoteFlag = useStore((s) => s.toggleQuoteFlag)
 
-  const po = purchaseOrders.find((p) => p.id === id)
-  if (!po) {
+  const quote = quotes.find((q) => q.id === Number(id))
+  if (!quote) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center gap-3 text-slate-400">
-        <p className="text-[14px]">발주를 찾을 수 없습니다.</p>
+        <p className="text-[14px]">수주 건을 찾을 수 없습니다.</p>
         <Button variant="ghost" size="sm" onClick={() => navigate('/po')}>목록으로</Button>
       </div>
     )
   }
 
-  const rfq = rfqs.find((r) => r.id === po.rfqId)
-  const supplier = suppliers.find((s) => s.id === po.supplierId)
-  const relatedEmails = emailLogs.filter((e) => e.poId === po.id)
+  const items = quote.items ?? []
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
       <Header
-        title={po.poNo}
-        subtitle={`${po.customerName} → ${po.supplierName}`}
+        title={quote.doc_number}
+        subtitle={`${quote.customer_name} · ${quote.vessel_name}`}
         actions={
           <div className="flex items-center gap-2">
-            <POStatusBadge status={po.status} />
-            {po.status === 'pending' && (
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={() => updatePOStatus(po.id, 'sent')}
-                icon={<Send className="w-3.5 h-3.5" />}
-              >
-                공급사에 발주 발송
-              </Button>
-            )}
-            {po.status === 'sent' && (
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={() => updatePOStatus(po.id, 'confirmed')}
-              >
-                확인 처리
-              </Button>
-            )}
-            {po.status === 'confirmed' && (
-              <Button
-                variant="success"
-                size="sm"
-                onClick={() => updatePOStatus(po.id, 'delivered')}
-              >
-                납품 완료 처리
-              </Button>
-            )}
+            <QuoteStatusBadges quote={quote} />
           </div>
         }
       />
@@ -82,17 +57,20 @@ export function PODetail() {
 
         <div className="grid grid-cols-3 gap-4 mb-4">
           <div className="col-span-2 bg-white border border-slate-200 rounded-xl p-5">
-            <h3 className="text-[13px] font-semibold text-slate-700 mb-4">발주 정보</h3>
+            <h3 className="text-[13px] font-semibold text-slate-700 mb-4">수주 정보</h3>
             <div className="grid grid-cols-3 gap-4">
               {[
-                { label: '발주번호', value: po.poNo },
-                { label: '연결 견적', value: po.rfqNo },
-                { label: '고객사', value: po.customerName },
-                { label: '공급사', value: po.supplierName },
-                { label: '발주금액', value: formatCurrency(po.totalAmount) },
-                { label: '발주일', value: formatDate(po.issuedAt) },
-                { label: '납기예정', value: po.expectedDelivery ? formatDate(po.expectedDelivery) : '—' },
-                { label: '상태', value: <POStatusBadge status={po.status} /> },
+                { label: '문서번호', value: quote.doc_number },
+                { label: 'REF NO', value: quote.ref_no },
+                { label: '매출처', value: quote.customer_name },
+                { label: '선명', value: quote.vessel_name },
+                { label: '선사', value: quote.shipping_company },
+                { label: '작성일', value: formatDate(quote.created_date) },
+                { label: '선적일', value: quote.shipping_date ? formatDate(quote.shipping_date) : '—' },
+                { label: '총금액(₩)', value: quote.total_amount_krw > 0 ? formatKRW(quote.total_amount_krw) : '—' },
+                { label: '총금액(F)', value: quote.total_amount_foreign > 0 ? `${quote.currency} ${formatForeign(quote.total_amount_foreign)}` : '—' },
+                { label: '매입액', value: quote.purchase_amount_krw > 0 ? formatKRW(quote.purchase_amount_krw) : '—' },
+                { label: '마진율', value: quote.margin_percent > 0 ? `${quote.margin_percent.toFixed(1)}%` : '—' },
               ].map((item) => (
                 <div key={item.label}>
                   <div className="text-[11px] text-slate-400 uppercase tracking-wide font-medium mb-0.5">{item.label}</div>
@@ -103,78 +81,70 @@ export function PODetail() {
           </div>
 
           <div className="bg-white border border-slate-200 rounded-xl p-5">
-            <h3 className="text-[13px] font-semibold text-slate-700 mb-4">공급사 정보</h3>
-            {supplier && (
-              <div className="space-y-2.5">
-                {[
-                  { label: '회사명', value: supplier.company },
-                  { label: '담당자', value: supplier.name },
-                  { label: '이메일', value: supplier.email },
-                  { label: '전화', value: supplier.phone },
-                ].map((item) => (
-                  <div key={item.label}>
-                    <div className="text-[11px] text-slate-400 uppercase tracking-wide font-medium">{item.label}</div>
-                    <div className={`text-[13px] font-medium ${item.label === '이메일' ? 'text-sky-600' : 'text-slate-700'}`}>{item.value}</div>
-                  </div>
-                ))}
-              </div>
-            )}
+            <h3 className="text-[13px] font-semibold text-slate-700 mb-4">상태 관리</h3>
+            <div className="flex flex-col gap-2">
+              {flagConfig.map((f) => {
+                const isActive = quote[f.key]
+                return (
+                  <Button
+                    key={f.key}
+                    variant={isActive ? 'primary' : 'secondary'}
+                    size="sm"
+                    onClick={() => toggleQuoteFlag(quote.id, f.key)}
+                    className="justify-start"
+                  >
+                    {isActive ? '✓ ' : ''}{f.label}
+                  </Button>
+                )
+              })}
+            </div>
           </div>
         </div>
 
-        {/* 발주 품목 */}
-        {rfq && (
-          <div className="bg-white border border-slate-200 rounded-xl overflow-hidden mb-4">
-            <div className="px-5 py-3.5 border-b border-slate-100 bg-slate-50 flex items-center gap-2">
-              <Package className="w-4 h-4 text-slate-400" />
-              <h3 className="text-[13px] font-semibold text-slate-700">발주 품목</h3>
+        {/* Items table */}
+        {items.length > 0 && (
+          <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
+            <div className="px-5 py-3.5 border-b border-slate-100 bg-slate-50">
+              <h3 className="text-[13px] font-semibold text-slate-700">수주 품목 ({items.length}건)</h3>
             </div>
             <table className="w-full">
               <thead>
                 <tr className="border-b border-slate-100">
-                  {['품번', '품목 설명', '수량', '단위', '단가', '소계'].map((h) => (
-                    <th key={h} className="px-5 py-2.5 text-left text-[11.5px] font-semibold text-slate-400 uppercase tracking-wide">{h}</th>
+                  {['POS', 'PART NO', '품명', '수량', '단위', '매출단가(₩)', '매입단가(₩)', '마진', '매입처'].map((h) => (
+                    <th key={h} className="px-5 py-3 text-left text-[11.5px] font-semibold text-slate-400 uppercase tracking-wide">{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
-                {rfq.items.map((item) => {
-                  const quote = item.supplierQuotes.find((q) => q.supplierId === po.supplierId)
-                  const unitPrice = quote?.unitPrice ?? item.costPrice ?? 0
-                  return (
-                    <tr key={item.id}>
-                      <td className="px-5 py-3.5 text-[13px] font-medium text-sky-600">{item.partNo}</td>
-                      <td className="px-5 py-3.5 text-[13px] text-slate-700">{item.description}</td>
-                      <td className="px-5 py-3.5 text-[13px] text-slate-700">{item.quantity}</td>
-                      <td className="px-5 py-3.5 text-[12.5px] text-slate-500">{item.unit}</td>
-                      <td className="px-5 py-3.5 text-[13px] text-slate-700">{formatCurrency(unitPrice)}</td>
-                      <td className="px-5 py-3.5 text-[13px] font-semibold text-slate-800">{formatCurrency(unitPrice * item.quantity)}</td>
-                    </tr>
-                  )
-                })}
+                {items.map((item) => (
+                  <tr key={item.id}>
+                    <td className="px-5 py-3.5 text-[13px] text-slate-600">{item.pos}</td>
+                    <td className="px-5 py-3.5 text-[13px] font-medium text-sky-600">{item.part_no}</td>
+                    <td className="px-5 py-3.5 text-[13px] text-slate-700">{item.product_name}</td>
+                    <td className="px-5 py-3.5 text-[13px] text-slate-700">{item.quantity}</td>
+                    <td className="px-5 py-3.5 text-[12.5px] text-slate-500">{item.unit}</td>
+                    <td className="px-5 py-3.5 text-[13px] text-slate-700">{item.sales_price_krw > 0 ? item.sales_price_krw.toLocaleString('ko-KR') : '—'}</td>
+                    <td className="px-5 py-3.5 text-[13px] text-slate-500">{item.purchase_price_krw > 0 ? item.purchase_price_krw.toLocaleString('ko-KR') : '—'}</td>
+                    <td className="px-5 py-3.5">
+                      {item.margin > 0 && <Badge variant="success" className="text-[11px]">{item.margin.toFixed(1)}%</Badge>}
+                    </td>
+                    <td className="px-5 py-3.5 text-[12.5px] text-slate-500">{item.supplier_name || '—'}</td>
+                  </tr>
+                ))}
               </tbody>
               <tfoot className="bg-slate-50 border-t border-slate-200">
                 <tr>
-                  <td colSpan={5} className="px-5 py-3 text-right text-[13px] font-semibold text-slate-600">발주 합계</td>
-                  <td className="px-5 py-3 text-[14px] font-bold text-slate-900">{formatCurrency(po.totalAmount)}</td>
+                  <td colSpan={5} className="px-5 py-3 text-right text-[13px] font-semibold text-slate-600">합계</td>
+                  <td className="px-5 py-3 text-[13px] font-bold text-slate-900">
+                    {items.reduce((s, i) => s + i.sales_amount_krw, 0).toLocaleString('ko-KR')}
+                  </td>
+                  <td className="px-5 py-3 text-[13px] font-semibold text-slate-600">
+                    {items.reduce((s, i) => s + i.purchase_amount_krw, 0).toLocaleString('ko-KR')}
+                  </td>
+                  <td colSpan={2} />
                 </tr>
               </tfoot>
             </table>
-          </div>
-        )}
-
-        {relatedEmails.length > 0 && (
-          <div className="space-y-3">
-            <h3 className="text-[13px] font-semibold text-slate-700">이메일 이력</h3>
-            {relatedEmails.map((email) => (
-              <div key={email.id} className="bg-white border border-slate-200 rounded-xl p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-[13px] font-semibold text-slate-800">{email.subject}</span>
-                  <span className="text-[12px] text-slate-400">{formatDate(email.sentAt)}</span>
-                </div>
-                <div className="text-[12.5px] text-slate-500">{email.body}</div>
-              </div>
-            ))}
           </div>
         )}
       </div>

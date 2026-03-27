@@ -11,6 +11,8 @@ import { Suppliers } from '@/pages/Suppliers'
 import { Parts } from '@/pages/Parts'
 import { Settings } from '@/pages/Settings'
 import { DesignPreview } from '@/pages/DesignPreview'
+import { PriceSearch } from '@/pages/PriceSearch'
+import { SupplierItemPrices } from '@/pages/SupplierItemPrices'
 
 export default function App() {
   return (
@@ -25,7 +27,10 @@ export default function App() {
           <Route path="/email" element={<EmailCenter />} />
           <Route path="/customers" element={<Customers />} />
           <Route path="/suppliers" element={<Suppliers />} />
+          <Route path="/vessels" element={<Parts />} />
           <Route path="/parts" element={<Parts />} />
+          <Route path="/prices" element={<PriceSearch />} />
+          <Route path="/supplier-prices" element={<SupplierItemPrices />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/design" element={<DesignPreview />} />
         </Route>

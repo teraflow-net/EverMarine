@@ -1,57 +1,98 @@
 import { create } from 'zustand'
-import type { RFQ, PurchaseOrder, EmailLog, RFQStatus, POStatus } from '@/types'
-import { rfqs as mockRFQs, purchaseOrders as mockPOs, emailLogs as mockEmails } from '@/data/mock'
+import type { Quote, Email, SentEmail, Customer, Supplier, Vessel, PriceSearch, SupplierItemPrice } from '@/types'
+import {
+  quotes as mockQuotes,
+  emails as mockEmails,
+  sentEmails as mockSentEmails,
+  customers as mockCustomers,
+  suppliers as mockSuppliers,
+  vessels as mockVessels,
+  priceSearches as mockPriceSearches,
+  supplierItemPrices as mockSupplierItemPrices,
+} from '@/data/mock'
 
 interface TradeStore {
-  rfqs: RFQ[]
-  purchaseOrders: PurchaseOrder[]
-  emailLogs: EmailLog[]
+  quotes: Quote[]
+  emails: Email[]
+  sentEmails: SentEmail[]
+  customers: Customer[]
+  suppliers: Supplier[]
+  vessels: Vessel[]
+  priceSearches: PriceSearch[]
+  supplierItemPrices: SupplierItemPrice[]
 
-  // RFQ
-  addRFQ: (rfq: RFQ) => void
-  updateRFQ: (id: string, updates: Partial<RFQ>) => void
-  updateRFQStatus: (id: string, status: RFQStatus) => void
+  // Quote
+  addQuote: (quote: Quote) => void
+  updateQuote: (id: number, updates: Partial<Quote>) => void
+  toggleQuoteFlag: (id: number, flag: 'is_quote' | 'is_order' | 'is_specification' | 'is_tax' | 'is_payment') => void
 
-  // PO
-  addPO: (po: PurchaseOrder) => void
-  updatePOStatus: (id: string, status: POStatus) => void
+  // PriceSearch
+  addPriceSearch: (item: PriceSearch) => void
+  updatePriceSearch: (id: number, updates: Partial<PriceSearch>) => void
+  deletePriceSearch: (id: number) => void
 
-  // Email
-  addEmailLog: (log: EmailLog) => void
+  // SupplierItemPrice
+  addSupplierItemPrice: (item: SupplierItemPrice) => void
+  updateSupplierItemPrice: (id: number, updates: Partial<SupplierItemPrice>) => void
+  deleteSupplierItemPrice: (id: number) => void
 }
 
 export const useStore = create<TradeStore>((set) => ({
-  rfqs: mockRFQs,
-  purchaseOrders: mockPOs,
-  emailLogs: mockEmails,
+  quotes: mockQuotes,
+  emails: mockEmails,
+  sentEmails: mockSentEmails,
+  customers: mockCustomers,
+  suppliers: mockSuppliers,
+  vessels: mockVessels,
+  priceSearches: mockPriceSearches,
+  supplierItemPrices: mockSupplierItemPrices,
 
-  addRFQ: (rfq) =>
-    set((s) => ({ rfqs: [rfq, ...s.rfqs] })),
+  addQuote: (quote) =>
+    set((s) => ({ quotes: [quote, ...s.quotes] })),
 
-  updateRFQ: (id, updates) =>
+  updateQuote: (id, updates) =>
     set((s) => ({
-      rfqs: s.rfqs.map((r) =>
-        r.id === id ? { ...r, ...updates, updatedAt: new Date().toISOString() } : r
+      quotes: s.quotes.map((q) =>
+        q.id === id ? { ...q, ...updates } : q
       ),
     })),
 
-  updateRFQStatus: (id, status) =>
+  toggleQuoteFlag: (id, flag) =>
     set((s) => ({
-      rfqs: s.rfqs.map((r) =>
-        r.id === id ? { ...r, status, updatedAt: new Date().toISOString() } : r
+      quotes: s.quotes.map((q) =>
+        q.id === id ? { ...q, [flag]: !q[flag] } : q
       ),
     })),
 
-  addPO: (po) =>
-    set((s) => ({ purchaseOrders: [po, ...s.purchaseOrders] })),
+  // PriceSearch CRUD
+  addPriceSearch: (item) =>
+    set((s) => ({ priceSearches: [item, ...s.priceSearches] })),
 
-  updatePOStatus: (id, status) =>
+  updatePriceSearch: (id, updates) =>
     set((s) => ({
-      purchaseOrders: s.purchaseOrders.map((p) =>
-        p.id === id ? { ...p, status, updatedAt: new Date().toISOString() } : p
+      priceSearches: s.priceSearches.map((p) =>
+        p.id === id ? { ...p, ...updates } : p
       ),
     })),
 
-  addEmailLog: (log) =>
-    set((s) => ({ emailLogs: [log, ...s.emailLogs] })),
+  deletePriceSearch: (id) =>
+    set((s) => ({
+      priceSearches: s.priceSearches.filter((p) => p.id !== id),
+    })),
+
+  // SupplierItemPrice CRUD
+  addSupplierItemPrice: (item) =>
+    set((s) => ({ supplierItemPrices: [item, ...s.supplierItemPrices] })),
+
+  updateSupplierItemPrice: (id, updates) =>
+    set((s) => ({
+      supplierItemPrices: s.supplierItemPrices.map((p) =>
+        p.id === id ? { ...p, ...updates } : p
+      ),
+    })),
+
+  deleteSupplierItemPrice: (id) =>
+    set((s) => ({
+      supplierItemPrices: s.supplierItemPrices.filter((p) => p.id !== id),
+    })),
 }))

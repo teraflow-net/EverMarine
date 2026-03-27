@@ -1,60 +1,65 @@
 import { Header } from '@/components/layout/Header'
-import { RFQStatusBadge } from '@/components/ui/Badge'
+import { QuoteStatusBadge } from '@/components/ui/Badge'
 import { useStore } from '@/store/useStore'
-import { formatDate, formatCurrency } from '@/lib/utils'
+import { formatDate, formatForeign } from '@/lib/utils'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/Button'
-import { FileText, ShoppingCart, TrendingUp, Clock, ArrowUpRight } from 'lucide-react'
+import { FileText, ShoppingCart, TrendingUp, Percent, ArrowUpRight } from 'lucide-react'
 
 export function Dashboard() {
   const navigate = useNavigate()
-  const rfqs = useStore((s) => s.rfqs)
-  const purchaseOrders = useStore((s) => s.purchaseOrders)
+  const quotes = useStore((s) => s.quotes)
+
+  const thisMonthQuotes = quotes.filter((q) => q.is_quote)
+  const thisMonthOrders = quotes.filter((q) => q.is_order)
+  const totalSales = quotes.reduce((s, q) => s + q.total_amount_krw, 0)
+  const avgMargin = quotes.filter((q) => q.margin_percent > 0).length > 0
+    ? quotes.filter((q) => q.margin_percent > 0).reduce((s, q) => s + q.margin_percent, 0) / quotes.filter((q) => q.margin_percent > 0).length
+    : 0
 
   const kpis = [
     {
-      label: '진행중 견적',
-      value: rfqs.filter((r) => !['closed', 'delivered'].includes(r.status)).length,
+      label: '이달 견적건수',
+      value: thisMonthQuotes.length,
       unit: '건',
       icon: FileText,
       color: 'text-sky-600',
       bg: 'bg-sky-50',
-      change: `+${rfqs.filter((r) => r.status === 'received').length} 신규`,
+      change: `총 ${quotes.length}건 등록`,
       changeColor: 'text-sky-600',
     },
     {
-      label: '처리 대기',
-      value: rfqs.filter((r) => ['received', 'supplier_replied', 'po_received'].includes(r.status)).length,
-      unit: '건',
-      icon: Clock,
-      color: 'text-orange-500',
-      bg: 'bg-orange-50',
-      change: '즉시 처리 필요',
-      changeColor: 'text-orange-500',
-    },
-    {
-      label: '이달 발주',
-      value: purchaseOrders.length,
+      label: '이달 수주건수',
+      value: thisMonthOrders.length,
       unit: '건',
       icon: ShoppingCart,
       color: 'text-indigo-600',
       bg: 'bg-indigo-50',
-      change: formatCurrency(purchaseOrders.reduce((s, p) => s + p.totalAmount, 0)),
-      changeColor: 'text-slate-500',
+      change: `수주율 ${quotes.length > 0 ? ((thisMonthOrders.length / quotes.length) * 100).toFixed(0) : 0}%`,
+      changeColor: 'text-indigo-600',
     },
     {
-      label: '이달 매출 (견적)',
-      value: formatCurrency(rfqs.filter((r) => r.totalSaleAmount).reduce((s, r) => s + (r.totalSaleAmount ?? 0), 0)),
+      label: '총매출액(원화)',
+      value: totalSales.toLocaleString('ko-KR'),
       icon: TrendingUp,
       color: 'text-emerald-600',
       bg: 'bg-emerald-50',
-      change: '평균 마진 35.2%',
-      changeColor: 'text-emerald-600',
+      change: '원',
+      changeColor: 'text-slate-500',
+    },
+    {
+      label: '평균마진율',
+      value: `${avgMargin.toFixed(1)}%`,
+      icon: Percent,
+      color: 'text-orange-500',
+      bg: 'bg-orange-50',
+      change: '목표 30% 이상',
+      changeColor: 'text-orange-500',
     },
   ]
 
-  const recentRFQs = [...rfqs]
-    .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+  const recentQuotes = [...quotes]
+    .sort((a, b) => new Date(b.created_date).getTime() - new Date(a.created_date).getTime())
     .slice(0, 6)
 
   return (
@@ -83,7 +88,7 @@ export function Dashboard() {
           })}
         </div>
 
-        {/* Recent RFQs */}
+        {/* Recent Quotes */}
         <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
           <div className="flex items-center justify-between px-8 py-6 border-b border-slate-100">
             <h2 className="text-[15px] font-semibold text-slate-800 tracking-[-0.01em]">최근 견적 현황</h2>
@@ -99,28 +104,29 @@ export function Dashboard() {
           <table className="w-full">
             <thead>
               <tr className="border-b border-slate-100">
-                {['견적번호', '고객사', '아이템수', '견적금액', '상태', '최종업데이트'].map((h) => (
+                {['문서번호', '매출처명', '선명', '총금액(F)', '통화', '상태', '작성일'].map((h) => (
                   <th key={h} className="px-5 py-3 text-left text-[11.5px] font-semibold text-slate-400">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {recentRFQs.map((rfq, i) => (
+              {recentQuotes.map((q, i) => (
                 <tr
-                  key={rfq.id}
-                  onClick={() => navigate(`/rfq/${rfq.id}`)}
-                  className={`hover:bg-sky-50/30 cursor-pointer transition-colors ${i !== recentRFQs.length - 1 ? 'border-b border-slate-50' : ''}`}
+                  key={q.id}
+                  onClick={() => navigate(`/rfq/${q.id}`)}
+                  className={`hover:bg-sky-50/30 cursor-pointer transition-colors ${i !== recentQuotes.length - 1 ? 'border-b border-slate-50' : ''}`}
                 >
                   <td className="px-5 py-3.5">
-                    <span className="text-[14px] font-semibold text-sky-600">{rfq.rfqNo}</span>
+                    <span className="text-[14px] font-semibold text-sky-600">{q.doc_number}</span>
                   </td>
-                  <td className="px-5 py-3.5 text-[14px] text-slate-700 font-medium">{rfq.customerName}</td>
-                  <td className="px-5 py-3.5 text-[14px] text-slate-500">{rfq.items.length} 품목</td>
+                  <td className="px-5 py-3.5 text-[14px] text-slate-700 font-medium">{q.customer_name}</td>
+                  <td className="px-5 py-3.5 text-[14px] text-slate-500">{q.vessel_name}</td>
                   <td className="px-5 py-3.5 text-[14px] text-slate-700 font-medium">
-                    {rfq.totalSaleAmount ? formatCurrency(rfq.totalSaleAmount) : '—'}
+                    {q.total_amount_foreign > 0 ? formatForeign(q.total_amount_foreign) : '—'}
                   </td>
-                  <td className="px-5 py-3.5"><RFQStatusBadge status={rfq.status} /></td>
-                  <td className="px-5 py-3.5 text-[13px] text-slate-400">{formatDate(rfq.updatedAt)}</td>
+                  <td className="px-5 py-3.5 text-[13px] text-slate-500">{q.currency}</td>
+                  <td className="px-5 py-3.5"><QuoteStatusBadge quote={q} /></td>
+                  <td className="px-5 py-3.5 text-[13px] text-slate-400">{formatDate(q.created_date)}</td>
                 </tr>
               ))}
             </tbody>

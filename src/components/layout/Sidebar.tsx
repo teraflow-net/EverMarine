@@ -3,6 +3,7 @@ import { cn } from '@/lib/utils'
 import {
   LayoutDashboard, FileText, ShoppingCart, Package,
   Users, Truck, Mail, Settings, ChevronRight,
+  DollarSign, Tags,
 } from 'lucide-react'
 
 const navSections = [
@@ -11,16 +12,18 @@ const navSections = [
     items: [
       { to: '/',       icon: LayoutDashboard, label: '대시보드' },
       { to: '/rfq',    icon: FileText,        label: '견적 관리',    badge: '2' },
-      { to: '/po',     icon: ShoppingCart,     label: '발주 관리' },
+      { to: '/po',     icon: ShoppingCart,     label: '수주 관리' },
       { to: '/email',  icon: Mail,            label: '이메일 센터' },
     ],
   },
   {
     label: '마스터',
     items: [
-      { to: '/customers', icon: Users,   label: '고객사' },
-      { to: '/suppliers',  icon: Truck,   label: '공급사' },
-      { to: '/parts',     icon: Package, label: '품목 마스터' },
+      { to: '/customers', icon: Users,   label: '매출처' },
+      { to: '/suppliers',  icon: Truck,   label: '매입처' },
+      { to: '/vessels',   icon: Package, label: '선박 관리' },
+      { to: '/prices',    icon: DollarSign, label: '단가 조회' },
+      { to: '/supplier-prices', icon: Tags, label: '품목단가' },
     ],
   },
   {

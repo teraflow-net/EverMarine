@@ -1,16 +1,37 @@
 import { Save, Send, Trash2, Plus, Download, Check, X, Filter, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
-import { Badge, RFQStatusBadge, POStatusBadge } from '@/components/ui/Badge'
-import type { RFQStatus, POStatus } from '@/types'
+import { Badge, QuoteStatusBadge } from '@/components/ui/Badge'
+import type { Quote } from '@/types'
 
-const rfqStatuses: RFQStatus[] = ['received', 'parsing', 'quoted_supplier', 'supplier_replied', 'quoted_customer', 'po_received', 'ordered', 'delivered', 'closed']
-const poStatuses: POStatus[] = ['pending', 'sent', 'confirmed', 'shipped', 'delivered', 'closed']
+const sampleQuote: Quote = {
+  id: 0, doc_number: 'MG-2026-0000', mail_uid: null,
+  created_date: '2026-01-01', shipping_date: null,
+  customer_name: 'Sample', ref_no: 'REF-001',
+  total_amount_krw: 0, total_amount_foreign: 0,
+  currency: 'USD', exchange_rate: null,
+  vessel_name: 'TEST', shipping_company: 'TEST',
+  is_quote: true, is_order: true, is_specification: true, is_tax: true, is_payment: true,
+  purchase_amount_krw: 0, purchase_amount_foreign: 0,
+  margin_percent: 0, discount: 0, vat: 0,
+  pk_charge: 0, ot_charge: 0, ft_charge: 0,
+  ci_margin_amount: 0, supplier_name: '', product_brand: '', product_type: '',
+  order_no: '', work_type: '', sum_amount_krw: 0, sum_amount_foreign: 0, remark: '',
+}
+
+const statusVariations: Partial<Quote>[] = [
+  { is_quote: false, is_order: false, is_specification: false, is_tax: false, is_payment: false },
+  { is_quote: true, is_order: false, is_specification: false, is_tax: false, is_payment: false },
+  { is_quote: true, is_order: true, is_specification: false, is_tax: false, is_payment: false },
+  { is_quote: true, is_order: true, is_specification: true, is_tax: false, is_payment: false },
+  { is_quote: true, is_order: true, is_specification: true, is_tax: true, is_payment: false },
+  { is_quote: true, is_order: true, is_specification: true, is_tax: true, is_payment: true },
+]
 
 export function DesignPreview() {
   return (
     <div className="flex-1 overflow-y-auto p-8">
       <h1 className="text-xl font-bold text-slate-900 mb-1">Design System Preview</h1>
-      <p className="text-sm text-slate-500 mb-8">Button + Badge 컴포넌트 스타일 가이드</p>
+      <p className="text-sm text-slate-500 mb-8">Button + Badge component style guide</p>
 
       {/* Buttons */}
       <section className="mb-10">
@@ -60,16 +81,15 @@ export function DesignPreview() {
           <Badge variant="purple">purple</Badge>
           <Badge variant="orange">orange</Badge>
           <Badge variant="muted">muted</Badge>
+          <Badge variant="indigo">indigo</Badge>
+          <Badge variant="emerald">emerald</Badge>
         </div>
 
-        <h2 className="text-sm font-semibold text-slate-900 mb-4 pb-2 border-b border-slate-200">RFQ 상태 배지</h2>
-        <div className="flex flex-wrap items-center gap-2 mb-6">
-          {rfqStatuses.map((s) => <RFQStatusBadge key={s} status={s} />)}
-        </div>
-
-        <h2 className="text-sm font-semibold text-slate-900 mb-4 pb-2 border-b border-slate-200">PO 상태 배지</h2>
-        <div className="flex flex-wrap items-center gap-2">
-          {poStatuses.map((s) => <POStatusBadge key={s} status={s} />)}
+        <h2 className="text-sm font-semibold text-slate-900 mb-4 pb-2 border-b border-slate-200">견적 상태 배지</h2>
+        <div className="flex flex-wrap items-center gap-4">
+          {statusVariations.map((overrides, i) => (
+            <QuoteStatusBadge key={i} quote={{ ...sampleQuote, ...overrides }} />
+          ))}
         </div>
       </section>
     </div>
