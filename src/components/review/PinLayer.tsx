@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { MessageCircle } from 'lucide-react'
-import { supabase, type ReviewComment } from '@/lib/supabase'
+import { supabase, PROJECT_ID, type ReviewComment } from '@/lib/supabase'
+import { createGitHubIssue, closeGitHubIssue, reopenGitHubIssue } from '@/lib/github'
 import { CommentPopover } from './CommentPopover'
 import { ReviewToggle } from './ReviewToggle'
 import { ReviewPanel } from './ReviewPanel'
@@ -23,6 +24,7 @@ export function PinLayer() {
     const { data } = await supabase
       .from('review_comments')
       .select('*')
+      .eq('project_id', PROJECT_ID)
       .eq('page_url', pageUrl)
       .order('created_at', { ascending: true })
     if (data) setComments(data)
@@ -65,19 +67,42 @@ export function PinLayer() {
 
   const handleSubmit = async (content: string, authorName: string, imageUrl: string | null) => {
     if (!newPinPos) return
+
+    // GitHub Issue 자동 생성
+    const issueNumber = await createGitHubIssue({
+      pageUrl,
+      xPercent: newPinPos.xPercent,
+      yPercent: newPinPos.yPercent,
+      content,
+      authorName,
+      imageUrl,
+    })
+
     await supabase.from('review_comments').insert({
+      project_id: PROJECT_ID,
       page_url: pageUrl,
       x_percent: newPinPos.xPercent,
       y_percent: newPinPos.yPercent,
       content,
       author_name: authorName,
       image_url: imageUrl,
+      github_issue_number: issueNumber,
     })
     setNewPinPos(null)
     setClickScreenPos(null)
   }
 
   const handleUpdateStatus = async (id: string, status: ReviewComment['status']) => {
+    // GitHub Issue 상태 동기화
+    const comment = comments.find((c) => c.id === id)
+    if (comment?.github_issue_number) {
+      if (status === 'resolved') {
+        closeGitHubIssue(comment.github_issue_number)
+      } else {
+        reopenGitHubIssue(comment.github_issue_number)
+      }
+    }
+
     await supabase
       .from('review_comments')
       .update({

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { X, MessageCircle, Check, Clock, Image, ExternalLink } from 'lucide-react'
-import { supabase, type ReviewComment } from '@/lib/supabase'
+import { supabase, PROJECT_ID, type ReviewComment } from '@/lib/supabase'
 
 type Props = {
   open: boolean
@@ -42,6 +42,7 @@ export function ReviewPanel({ open, onClose, onPinClick }: Props) {
     const { data } = await supabase
       .from('review_comments')
       .select('*')
+      .eq('project_id', PROJECT_ID)
       .order('created_at', { ascending: false })
     if (data) setAllComments(data)
   }, [])
@@ -150,6 +151,18 @@ export function ReviewPanel({ open, onClose, onPinClick }: Props) {
                           <Image size={12} />
                           첨부 이미지
                         </div>
+                      )}
+                      {comment.github_issue_number && (
+                        <a
+                          href={`https://github.com/${import.meta.env.VITE_GITHUB_REPO || 'teraflow-net/EverMarine'}/issues/${comment.github_issue_number}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="mt-1 inline-flex items-center gap-1 text-xs text-violet-600 hover:text-violet-800"
+                        >
+                          <ExternalLink size={10} />
+                          #{comment.github_issue_number}
+                        </a>
                       )}
                     </div>
                   </div>
